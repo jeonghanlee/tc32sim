@@ -1,28 +1,29 @@
 ####################################################################################################
-################# START of tcmd-sim.iocsh ##########################################################
-#-- P          : PREFIX             e.g. TC32:001:
-#-- PORT       : Asyn port name     e.g. TCP001
-#-- IPADDR     : Simulator host     e.g. 127.0.0.1
-#-- TCP_PORT   : TCP port number    e.g. 9400
-#-- DATABASE_TOP :
-#-- SCAN       : [Default] 1 second
-#-- PREC       : [Default] 3
-#-- OBJ        : [Default] group
-#-- PVX        : [Default] #--  (set to empty string to enable dbLoadGroup)
-#-- SHOWDEV    : [Default] #--
-#-- ASYNTRACE  : [Default] #--
+################# START of tc32sim.iocsh ###########################################################
+#-- P             : PREFIX
+#-- PORT          : Asyn port name
+#-- IPADDR        : Simulator host      [Default] 127.0.0.1
+#-- TCP_PORT      : TCP port number
+#-- DATABASE_TOP  :
+#-- DATABASE_NAME : [Default] TC-32-sim.db
+#-- SCAN          : [Default] 1 second
+#-- PREC          : [Default] 3
+#-- CAOFF         : [Default] #--  (set to empty string to restrict CA to loopback)
+#-- PVX           : [Default] #--  (set to empty string to enable dbLoadGroup)
+#-- PVXSJSON_NAME : [Default] tcmd_group.json
+#-- OBJ           : [Default] group
+#-- ASYNTRACE     : [Default] #--
 #-- ################################################################################################
-
-drvAsynIPPortConfigure("$(PORT)", "$(IPADDR=127.0.0.1):$(TCP_PORT=9400)", 0, 0, 0)
+#--#
+#-
+drvAsynIPPortConfigure("$(PORT)", "$(IPADDR=127.0.0.1):$(TCP_PORT)", 0, 0, 0)
 asynOctetSetInputEos( "$(PORT)", 0, "\n")
 asynOctetSetOutputEos("$(PORT)", 0, "\n")
-
 $(ASYNTRACE=#--) asynSetTraceMask($(PORT), -1, ERROR|FLOW|DRIVER)
-
-dbLoadRecords("$(DATABASE_TOP)/TC32-sim.db",      "P=$(P),PORT=$(PORT),SCAN=$(SCAN=1 second),PREC=$(PREC=3)")
-dbLoadRecords("$(DATABASE_TOP)/tc32-sim-meta.template", "P=$(P),IPADDR=$(IPADDR=127.0.0.1)")
-
-$(PVX=#--)dbLoadGroup("$(DATABASE_TOP)/tcmd_group.json", "P=$(P),OBJ=$(OBJ=group)")
-
-################# END of tcmd-sim.iocsh ############################################################
+dbLoadRecords("$(DATABASE_TOP)/$(DATABASE_NAME=TC-32-sim.db)", "P=$(P),PORT=$(PORT),SCAN=$(SCAN=1 second),PREC=$(PREC=3)")
+$(CAOFF=#--)epicsEnvSet("EPICS_CAS_INTF_ADDR_LIST", "127.0.0.1")
+$(CAOFF=#--)epicsEnvSet("EPICS_CA_AUTO_ADDR_LIST",  "NO")
+$(PVX=#--)dbLoadGroup("$(DATABASE_TOP)/$(PVXSJSON_NAME=tcmd_group.json)", "P=$(P),OBJ=$(OBJ=group)")
+#-
+################# END of tc32sim.iocsh #############################################################
 ####################################################################################################
