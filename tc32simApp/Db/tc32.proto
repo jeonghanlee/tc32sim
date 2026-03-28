@@ -1,0 +1,9 @@
+# Protocol for parsing TC-32 emulator output
+# The emulator sends "CHXX: <TEMP>\n"
+get_temp
+{
+    # The 'in' directive defines the input pattern.
+    # \$1 is replaced by the argument passed from the INP field (the channel number).
+    # %f matches a floating-point number.
+    in "CH\$1: %f";
+}

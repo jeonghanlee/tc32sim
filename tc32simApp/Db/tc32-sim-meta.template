@@ -1,0 +1,62 @@
+record(stringin, "$(P)ModelName")
+{
+    field(DESC, "Device model name")
+    field(PINI, "YES")
+    field( VAL, "TC32-SIM")
+}
+
+record(stringin, "$(P)FirmwareVersion")
+{
+    field(DESC, "Firmware version")
+    field(PINI, "YES")
+    field( VAL, "1.00-sim")
+}
+
+record(stringin, "$(P)ModelNumber")
+{
+    field(DESC, "Model number")
+    field(PINI, "YES")
+    field( VAL, "TC-32")
+}
+
+record(stringin, "$(P)UniqueID")
+{
+    field(DESC, "Unique ID (IP address)")
+    field(PINI, "YES")
+    field( VAL, "$(IPADDR=127.0.0.1)")
+}
+
+record(stringin, "$(P)ULVersion")
+{
+    field(DESC, "UL library version")
+    field(PINI, "YES")
+    field( VAL, "0.0-sim")
+}
+
+record(stringin, "$(P)DriverVersion")
+{
+    field(DESC, "Driver version")
+    field(PINI, "YES")
+    field( VAL, "0.0-sim")
+}
+
+record(ao, "$(P)PollTimeMS")
+{
+    field(DESC, "Poll time in ms")
+    field(PINI, "YES")
+    field( VAL, "333")
+}
+
+record(ao, "$(P)PollSleepMS")
+{
+    field(DESC, "Poll sleep time in ms")
+    field(PINI, "YES")
+    field( VAL, "0")
+}
+
+record(stringin, "$(P)LastErrorMessage")
+{
+    field(DESC, "Last error message")
+    field(PINI, "YES")
+    field( VAL, "")
+}
