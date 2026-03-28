@@ -107,7 +107,7 @@ matches `CH<NN>: <float>`.
 
 ```bash
 ./simulator/check_simulators.bash              # check all 64
-./simulator/check_simulators.bash --first 5    # check first 5 only
+./simulator/check_simulators.bash --first 5   # check first 5 only
 ./simulator/check_simulators.bash --port 9400  # check one port
 ```
 

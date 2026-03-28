@@ -1,4 +1,0 @@
-#!/bin/sh
-# cd "/vxboot/tc32sim/boot/iocBoot/ioctestlab-tc32sim"
-exec ./st.cmd
-

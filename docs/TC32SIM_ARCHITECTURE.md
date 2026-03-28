@@ -18,16 +18,16 @@ identical to production.
 
 ```
 tc32_emulator.bash
-        | TCP  "CH01: 23.5\n" ... "CH32: 45.1\n"
+        | TCP  "CH00: 23.5\n" ... "CH31: 45.1\n"
         ↓
 tc32.proto
         | get_temp($1) → in "CH\$1: %f"
         ↓
 temperature-sim.template
-        | record(ai, "$(P)Ti0") SCAN=I/O Intr
-        | record(ai, "$(P)Ti1") SCAN=I/O Intr
+        | record(ai, "$(P)Ti0")  SCAN=I/O Intr  ADDR=00
+        | record(ai, "$(P)Ti1")  SCAN=I/O Intr  ADDR=01
         | ...
-        | record(ai, "$(P)Ti31") SCAN=I/O Intr
+        | record(ai, "$(P)Ti31") SCAN=I/O Intr  ADDR=31
         ↓
 tcmd_group.json
         | "ch00.temp": "+channel": "$(P)Ti0.VAL"
@@ -36,7 +36,6 @@ tcmd_group.json
         | "ch31.temp": "+channel": "$(P)Ti31.VAL"
         ↓
 $(P)group   [alsu:nt/TC32:1.0]
-
 ```
 
 ---
@@ -44,23 +43,23 @@ $(P)group   [alsu:nt/TC32:1.0]
 ## 3. Emulator
 
 `tc32_emulator.bash` creates a TCP listener on a specified port using `socat`.
-It emits 32 lines per cycle, one per channel:
+It emits 32 lines per cycle, one per channel. Channel numbering is 0-based:
 
 ```
-CH01: 23.5
-CH02: 41.8
+CH00: 23.5
+CH01: 41.8
 ...
-CH32: 19.3
+CH31: 19.3
 ```
 
-The update rate is continuous — each `generate_temp()` call takes approximately 6–15 ms,
-so one full 32-channel cycle completes in roughly 200–480 ms (~2–5 Hz effective rate
-per channel).
+Temperature values are managed as integers in tenths of a degree (100–900 = 10.0–90.0 °C)
+using bash integer arithmetic. No external processes (`bc`) are spawned during the main
+loop, keeping CPU usage low across 64 concurrent instances.
 
 64 instances run on ports 9400–9463:
 
 ```bash
-parallel ./tc32_emulator.bash --port ::: $(seq 9400 9463)
+./simulator/run_simulators.bash
 ```
 
 ---
@@ -77,60 +76,58 @@ get_temp
 }
 ```
 
-`$1` is replaced at record load time by the channel number argument passed from the
-`INP` field. For example, `Ti0` passes `01`, so the protocol matches `CH01: <float>`.
+`$1` is replaced at record load time by the `ADDR` argument passed from the `INP` field.
+For example, `Ti0` passes `ADDR=00`, so the protocol matches `CH00: <float>`.
 
 ---
 
 ## 5. Record Mapping
 
-`temperature-sim.template` defines one `ai` record per channel. The record name follows
-the `Ti<N>` pattern required by `tcmd_group.json`:
+`temperature-sim.template` defines five records per channel, matching the structure of
+`measCompTemperatureIn-alsu.template`. The `ai` record uses StreamDevice instead of
+`asynFloat64Average`. The remaining four records use `Soft Channel` with fixed initial
+values since no hardware driver is present.
 
-```
-record(ai, "$(P)$(R)")
-{
-    field(DTYP, "stream")
-    field( INP, "@tc32.proto get_temp($(CH)) $(PORT)")
-    field(SCAN, "I/O Intr")
-    ...
-}
-```
+| Record | Type | DTYP | Notes |
+|---|---|---|---|
+| `$(P)$(R)` | ai | stream | temperature from emulator |
+| `$(P)$(R)Scale` | mbbo | Soft Channel | default: Celsius |
+| `$(P)$(R)TCType` | mbbo | Soft Channel | default: Type K |
+| `$(P)$(R)Filter` | mbbo | Soft Channel | default: Filter |
+| `$(P)$(R)OpenTCDetect` | bo | Soft Channel | default: Enable |
 
-`TC32-sim.substitutions` provides the `R` (record name) and `CH` (stream token)
+`TC-32-sim.substitutions` provides the `R` (record name) and `ADDR` (stream token)
 arguments for all 32 channels:
 
-| R | CH | CA record | Stream token |
+| R | ADDR | CA record | Stream token |
 |---|---|---|---|
-| Ti0 | 01 | `$(P)Ti0` | `CH01` |
-| Ti1 | 02 | `$(P)Ti1` | `CH02` |
+| Ti0 | 00 | `$(P)Ti0` | `CH00` |
+| Ti1 | 01 | `$(P)Ti1` | `CH01` |
 | ... | ... | ... | ... |
-| Ti31 | 32 | `$(P)Ti31` | `CH32` |
-
-This mapping is the only difference between tc32sim and the production TCMD IOC.
-In production, `$(P)Ti0.VAL` is written by the measComp driver. In tc32sim, it is
-written by StreamDevice reading from the TCP emulator.
+| Ti31 | 31 | `$(P)Ti31` | `CH31` |
 
 ---
 
 ## 6. Metadata Records
 
 `tc32-sim-meta.template` provides static records for the device metadata fields
-required by `tcmd_group.json`:
+required by `tcmd_group.json`. All records carry `PINI=YES` and write once at IOC
+initialization.
 
 | Record | Value | maps to |
 |---|---|---|
 | `$(P)ModelName` | `TC32-SIM` | `device.model` |
 | `$(P)FirmwareVersion` | `1.00-sim` | `device.firmware` |
 | `$(P)ModelNumber` | `TC-32` | `tc32.model_number` |
-| `$(P)UniqueID` | `$(IPADDR)` | `tc32.unique_id` |
+| `$(P)UniqueID` | `$(IPADDR=127.0.0.1)` | `tc32.unique_id` |
 | `$(P)ULVersion` | `0.0-sim` | `tc32.ul_version` |
 | `$(P)DriverVersion` | `0.0-sim` | `tc32.driver_version` |
 | `$(P)PollTimeMS` | `333` | `tc32.poll_time_ms` |
 | `$(P)PollSleepMS` | `0` | `tc32.poll_sleep_ms` |
 | `$(P)LastErrorMessage` | `""` | `device.error` |
 
-All records carry `PINI=YES` and write once at IOC initialization.
+Both `tc32-sim-meta.template` and `temperature-sim.template` are combined in
+`TC-32-sim.substitutions`, which the build system expands into a single `TC-32-sim.db`.
 
 ---
 
@@ -167,7 +164,8 @@ $(P)group   [alsu:nt/TC32:1.0]
 
 ## 8. Per-Device iocsh Snippet
 
-`tcmd-sim.iocsh` replaces `MultiFunctionConfig` with `drvAsynIPPortConfigure`:
+`tc32sim.iocsh` replaces `MultiFunctionConfig` with `drvAsynIPPortConfigure` and loads
+the single combined `TC-32-sim.db`:
 
 **Production (`tcmd.iocsh`):**
 ```
@@ -176,13 +174,12 @@ dbLoadRecords("$(DATABASE_TOP)/TC32.db", ...)
 dbLoadGroup("$(DATABASE_TOP)/tcmd_group.json", ...)
 ```
 
-**Simulator (`tcmd-sim.iocsh`):**
+**Simulator (`tc32sim.iocsh`):**
 ```
 drvAsynIPPortConfigure("$(PORT)", "$(IPADDR):$(TCP_PORT)", 0, 0, 0)
 asynOctetSetInputEos( "$(PORT)", 0, "\n")
 asynOctetSetOutputEos("$(PORT)", 0, "\n")
-dbLoadRecords("$(DATABASE_TOP)/TC32-sim.db", ...)
-dbLoadRecords("$(DATABASE_TOP)/tc32-sim-meta.template", ...)
+dbLoadRecords("$(DATABASE_TOP)/TC-32-sim.db", ...)
 dbLoadGroup("$(DATABASE_TOP)/tcmd_group.json", ...)
 ```
 
@@ -197,45 +194,18 @@ the group is not loaded and only CA records are active.
 unique Asyn port name, PV prefix, and TCP port number:
 
 ```
-iocshLoad("$(IOCSH_LOCAL_TOP)/tcmd-sim.iocsh",
+iocshLoad("$(IOCSH_LOCAL_TOP)/tc32sim.iocsh",
           "PORT=TCP001,P=TC32:001:,TCP_PORT=9400,DATABASE_TOP=$(DB_TOP),PVX=")
 ...
-iocshLoad("$(IOCSH_LOCAL_TOP)/tcmd-sim.iocsh",
+iocshLoad("$(IOCSH_LOCAL_TOP)/tc32sim.iocsh",
           "PORT=TCP064,P=TC32:064:,TCP_PORT=9463,DATABASE_TOP=$(DB_TOP),PVX=")
 ```
 
 ---
 
-## 10. Building
-
-### Prerequisites
-
-`configure/RELEASE` must include:
-
-```makefile
-STREAM = $(EPICS_MODULES)/StreamDevice
-PVXS   = $(EPICS_MODULES)/pvxs
-```
-
-`tc32simApp/src/Makefile` must include:
-
-```makefile
-tc32sim_DBD  += stream.dbd
-tc32sim_LIBS += stream
-tc32sim_LIBS += pvxs
-```
-
-### Build command
-
-```bash
-source ~/EPICS-environment/1.2.0/debian-13/7.0.10/setEpicsEnv.bash
-cd ioc
-make
-```
-
 ---
 
-## 11. Device and Port Map
+## 10. Device and Port Map
 
 | Device | P prefix | TCP port |
 |---|---|---|
