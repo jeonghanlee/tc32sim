@@ -72,12 +72,15 @@ output:
 ```
 get_temp
 {
+    ExtraInput = Ignore;
     in "CH\$1: %f";
 }
 ```
 
 `$1` is replaced at record load time by the `ADDR` argument passed from the `INP` field.
 For example, `Ti0` passes `ADDR=00`, so the protocol matches `CH00: <float>`.
+`ExtraInput = Ignore` discards any line that does not match the expected channel token,
+preventing mismatch errors when multiple records share the same stream.
 
 ---
 
@@ -96,7 +99,7 @@ values since no hardware driver is present.
 | `$(P)$(R)Filter` | mbbo | Soft Channel | default: Filter |
 | `$(P)$(R)OpenTCDetect` | bo | Soft Channel | default: Enable |
 
-`TC-32-sim.substitutions` provides the `R` (record name) and `ADDR` (stream token)
+`TC32-sim.substitutions` provides the `R` (record name) and `ADDR` (stream token)
 arguments for all 32 channels:
 
 | R | ADDR | CA record | Stream token |
@@ -127,7 +130,7 @@ initialization.
 | `$(P)LastErrorMessage` | `""` | `device.error` |
 
 Both `tc32-sim-meta.template` and `temperature-sim.template` are combined in
-`TC-32-sim.substitutions`, which the build system expands into a single `TC-32-sim.db`.
+`TC32-sim.substitutions`, which the build system expands into a single `TC32-sim.db`.
 
 ---
 
@@ -165,7 +168,7 @@ $(P)group   [alsu:nt/TC32:1.0]
 ## 8. Per-Device iocsh Snippet
 
 `tc32sim.iocsh` replaces `MultiFunctionConfig` with `drvAsynIPPortConfigure` and loads
-the single combined `TC-32-sim.db`:
+the single combined `TC32-sim.db`:
 
 **Production (`tcmd.iocsh`):**
 ```
@@ -179,7 +182,7 @@ dbLoadGroup("$(DATABASE_TOP)/tcmd_group.json", ...)
 drvAsynIPPortConfigure("$(PORT)", "$(IPADDR):$(TCP_PORT)", 0, 0, 0)
 asynOctetSetInputEos( "$(PORT)", 0, "\n")
 asynOctetSetOutputEos("$(PORT)", 0, "\n")
-dbLoadRecords("$(DATABASE_TOP)/TC32-sim.db", ...)
+dbLoadRecords("$(DATABASE_TOP)/TC32-sim.db", "...,SCAN=I/O Intr,...")
 dbLoadGroup("$(DATABASE_TOP)/tcmd_group.json", ...)
 ```
 
