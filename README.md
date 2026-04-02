@@ -10,7 +10,7 @@ The IOC and PVA group object are structurally identical to the production TCMD I
 ## Signal chain
 
 ```
-tc32_emulator.bash          "CH00: 23.5\n" ... "CH31: 45.1\n"
+tc32_emulator.bash          "CH00: 23.5\n" ... "CH31: 45.1\n"  (~3 Hz)
         ↓ TCP
 tc32.proto                  get_temp($1) → in "CH\$1: %f"
         ↓ StreamDevice
@@ -31,35 +31,40 @@ Clients
 
 ```bash
 ./simulator/run_simulators.bash
-```
-
-### 2. Verify simulators
-
-```bash
 ./simulator/check_simulators.bash
 ```
 
-### 3. Build IOC
+### 2. Build IOC
 
 ```bash
 source ~/EPICS-environment/1.2.0/debian-13/7.0.10/setEpicsEnv.bash
-cd ioc
 make
 ```
 
-### 4. Start IOC
+### 3. Start IOC
+
+**Option A — direct**
 
 ```bash
-cd ioc/iocBoot/ioctestlab-tc32sim
-./run
+cd iocBoot/ioctestlab-tc32sim
+./st-sim.cmd
 ```
 
-### 5. Verify PVA
+**Option B — ioc-runner (system service)**
 
 ```bash
-pvxget TC32:001:group
-pvxget -r "ch00.temp" TC32:001:group
-pvxget TC32:064:group
+ioc-runner install testlab-tc32sim.conf
+ioc-runner start  testlab-tc32sim
+ioc-runner status testlab-tc32sim
+ioc-runner attach testlab-tc32sim
+```
+
+See [epics-ioc-runner](https://github.com/jeonghanlee/epics-ioc-runner) for setup.
+
+### 4. Verify PVA
+
+```bash
+./tools/check_pva.bash
 ```
 
 ---
@@ -74,3 +79,11 @@ pvxget TC32:064:group
 
 TCP port = 9400 + (NNN − 1)
 
+---
+
+## Documentation
+
+- [Architecture](docs/TC32SIM_ARCHITECTURE.md) — signal chain, record mapping, PVA object structure
+- [PVA CLI Usage](docs/TC32SIM_PVXS_CLI.md) — pvxget / pvxmonitor / pvxput
+- [Simulator Scripts](docs/TC32SIM_SIMULATOR.md) — emulator usage and internals
+- [PVXS Group JSON Reference](docs/tcmd_group_json_reference.md) — QSRV2 group JSON syntax

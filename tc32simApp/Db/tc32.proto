@@ -2,6 +2,7 @@
 # The emulator sends "CHXX: <TEMP>\n"
 get_temp
 {
+    ExtraInput = Ignore;
     # The 'in' directive defines the input pattern.
     # \$1 is replaced by the argument passed from the INP field (the channel number).
     # %f matches a floating-point number.

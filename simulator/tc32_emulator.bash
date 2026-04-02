@@ -115,4 +115,5 @@ while true; do
         val=$(generate_temp "$i")
         printf "CH%02d: %s\n" "$i" "$val" > "$SERIAL_DEV"
     done
+    sleep 0.3
 done

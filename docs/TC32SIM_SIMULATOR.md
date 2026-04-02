@@ -27,8 +27,8 @@ CH01: 41.8
 CH31: 19.3
 ```
 
-Channel numbering is 0-based. One full 32-channel cycle repeats continuously
-without a fixed sleep — the rate is limited by the PTY write speed.
+Channel numbering is 0-based. One full 32-channel cycle completes every ~0.3 s,
+giving approximately 3 Hz update rate per channel.
 
 ### Temperature simulation
 

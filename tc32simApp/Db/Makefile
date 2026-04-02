@@ -44,6 +44,7 @@ endif
 
 ##
 DB += $(patsubst ../%, %, $(wildcard ../*.proto))
+DB += $(patsubst ../%, %, $(wildcard ../*.json))
 #DB += $(patsubst ../%, %, $(wildcard ../*.acf))
 
 #REQ += $(patsubst ../%, %, $(wildcard ../*.req))

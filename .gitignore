@@ -67,3 +67,6 @@ auto_positions.sav*
 *.out
 *.toc
 .DS_Store
+.iocsh_history
+iocBoot/ioctestlab-tc32sim/testlab-tc32sim
+*.log

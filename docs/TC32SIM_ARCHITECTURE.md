@@ -179,7 +179,7 @@ dbLoadGroup("$(DATABASE_TOP)/tcmd_group.json", ...)
 drvAsynIPPortConfigure("$(PORT)", "$(IPADDR):$(TCP_PORT)", 0, 0, 0)
 asynOctetSetInputEos( "$(PORT)", 0, "\n")
 asynOctetSetOutputEos("$(PORT)", 0, "\n")
-dbLoadRecords("$(DATABASE_TOP)/TC-32-sim.db", ...)
+dbLoadRecords("$(DATABASE_TOP)/TC32-sim.db", ...)
 dbLoadGroup("$(DATABASE_TOP)/tcmd_group.json", ...)
 ```
 
@@ -203,9 +203,36 @@ iocshLoad("$(IOCSH_LOCAL_TOP)/tc32sim.iocsh",
 
 ---
 
+## 10. Building
+
+### Prerequisites
+
+`configure/RELEASE` must include:
+
+```makefile
+STREAM = $(EPICS_MODULES)/StreamDevice
+PVXS   = $(EPICS_MODULES)/pvxs
+```
+
+`tc32simApp/src/Makefile` must include:
+
+```makefile
+tc32sim_DBD  += stream.dbd
+tc32sim_LIBS += stream
+tc32sim_LIBS += pvxs
+```
+
+### Build command
+
+```bash
+source ~/EPICS-environment/1.2.0/debian-13/7.0.10/setEpicsEnv.bash
+cd ioc
+make
+```
+
 ---
 
-## 10. Device and Port Map
+## 11. Device and Port Map
 
 | Device | P prefix | TCP port |
 |---|---|---|
