@@ -122,6 +122,11 @@ Common_DBDs += caPutLog.dbd
 Common_LIBs += caPutLog
 endif
 
+ifneq ($(LINSTAT),)
+Common_DBDs += linStat.dbd
+Common_LIBs += linStat
+endif
+
 
 ifneq ($(OPCUA),)
 Common_DBDs += opcua.dbd
